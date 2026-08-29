@@ -118,7 +118,7 @@ export default function Dashboard({ userName = 'Physio Pro' }) {
           </div>
         </div>
 
-        {/* Cases by Body Area */}
+        
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-base font-semibold text-slate-900">Cases by Body Area</h2>
           <div className="mx-auto h-36 w-36">
@@ -156,7 +156,7 @@ export default function Dashboard({ userName = 'Physio Pro' }) {
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Latest Patients */}
+       
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-2">
           <h2 className="mb-4 text-base font-semibold text-slate-900">Latest Patients</h2>
           <ul className="divide-y divide-slate-100">
@@ -182,7 +182,7 @@ export default function Dashboard({ userName = 'Physio Pro' }) {
           </ul>
         </div>
 
-        {/* AI Insights */}
+        
         <div className="flex flex-col justify-between rounded-2xl bg-linear-to-br from-violet-600 to-indigo-600 p-6 text-white shadow-sm">
           <div>
             <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
