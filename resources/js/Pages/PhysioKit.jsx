@@ -75,7 +75,7 @@ export default function PhysioKit() {
         ))}
       </div>
 
-      {/* Body area grid */}
+      
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {BODY_AREAS.map(({ key, label, emoji }) => {
           const selected = selectedArea === key;
@@ -97,13 +97,13 @@ export default function PhysioKit() {
         })}
       </div>
 
-      {/* Bottom row */}
+      
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Body map reference */}
         <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm lg:col-span-2">
           <h2 className="mb-4 text-base font-semibold text-slate-900">Body Map Reference</h2>
           <div className="flex h-72 items-center justify-center rounded-xl bg-slate-100 text-slate-300">
-            {/* Placeholder silhouette — swap with a real body-map illustration/SVG */}
+            
             <svg width="72" height="140" viewBox="0 0 72 140" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="36" cy="18" r="16" fill="currentColor" />
               <path
