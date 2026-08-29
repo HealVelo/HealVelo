@@ -43,7 +43,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Sidebar - desktop only, liquid glass style */}
+      
       <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 flex-col justify-between self-start overflow-hidden rounded-[28px] border border-white/60 bg-linear-to-b from-white/70 via-white/40 to-white/50 px-4 py-6 shadow-[0_8px_32px_rgba(124,58,237,0.15),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-2xl backdrop-saturate-150 md:ml-6 md:flex">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-linear-to-b from-white/50 to-transparent" />
         <div>
@@ -58,7 +58,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Nav links */}
+          {/* links */}
           <nav className="flex flex-col gap-1">
             {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
               const active = isActive(href);
