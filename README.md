@@ -1,63 +1,71 @@
-<<<<<<< HEAD
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🩺 HealVelo PhysioKit & Clinical EHR
+---
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 📂 Struktur Modul & Fitur Aplikasi
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 1. 🔐 Modul Autentikasi & Manajemen Akun (`Auth`)
+* **Registrasi Akun Praktisi:** Pendaftaran akun baru bagi mahasiswa praktikan maupun dosen/clinical educator dengan validasi ketat.
+* **Manajemen Peran (*Role-Based Access*):** Pembagian hak akses terstruktur antara `mahasiswa` dan `supervisor`.
+* **Relasi Pembimbing Otomatis:** Akun mahasiswa terhubung langsung ke supervisor yang membimbingnya untuk validasi dokumen klinis.
+* **Keamanan Sesi & Kredensial:** Dilengkapi proteksi *rate limiting* untuk mencegah brute-force login, opsi *remember me*, serta fitur intip kata sandi (*toggle password visibility*).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 2. 📊 Modul Dashboard Overview (`Dashboard`) BELUM DI PERBARUI LEBIH LANJUT
+* **Statistik Cepat Klinis:** Kartu metrik *real-time* yang menampilkan total pasien terdaftar, asesmen yang tersimpan, program intervensi FITT yang aktif, serta laporan ICF yang diterbitkan.
+* **Akses Pintas Cepat (*Quick Actions*):** Tombol pintas untuk segera memulai pendaftaran pasien baru, membuka formulir asesmen fisioterapi, atau melihat rekam jejak evaluasi.
+* **Identitas Pengguna Aktif:** Menampilkan nama praktisi yang sedang bertugas beserta badge perannya (`Mahasiswa` atau `Supervisor`).
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 3. 👥 Modul Direktori Pasien (`Patients`)
+* **Pendaftaran Pasien Baru:** Input terstruktur mencakup identitas personal (Nama, Usia, Jenis Kelamin, Pekerjaan, Agama, Alamat), diagnosis rujukan medis, serta instruksi umum.
+* **Generator No. Rekam Medis (RM) Otomatis:** Sistem penomoran nomor rekam medis berurutan berbasis basis data.
+* **Pencarian & Paginasi Data:** Daftar pasien dilengkapi penomoran halaman (*pagination*) dan status keluhan terkini.
+* **Lampiran Dokumen Medis:** Fitur unggah berkas penunjang (hasil rontgen, radiologi, atau surat rujukan dokter) dengan penyajian berkas yang aman.
+* **Profil Pasien Komprehensif (`Patients/Show`):** Halaman riwayat terpadu yang merangkum seluruh asesmen fisioterapi sebelumnya, laporan ICF, dan grafik evaluasi perkembangan pasien.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+### 4. 🧰 Modul PhysioKit & Asesmen Klinis (`PhysioKit/Assessment`)
+* **Smart Age Detection (Deteksi Usia Cerdas):**
+  * **Usia $\le$ 12 Tahun:** Sistem secara otomatis mengunci formulir ke **Mode Pediatrik (Tumbuh Kembang Anak)**.
+  * **Usia $>$ 12 Tahun:** Sistem secara otomatis mengunci ke **Mode Dewasa / Muskuloskeletal Umum**.
+* **Alur Formulir 3 Tahap Terarah:**
+  * **Tahap 1 (Data Subjektif):** Keluhan utama, RPS, anamnesis sistemik organ tubuh, serta pemisahan otomatis antara riwayat *Prenatal, Natal, Postnatal* (kasus anak) dan *RPD, RPP, Riwayat Keluarga* (kasus dewasa).
+  * **Tahap 2 (Data Objektif):** Tanda-tanda vital lengkap, inspeksi statis/dinamis, palpasi, perkusi refleks, dan tabel Gerakan Dasar 1.6 (Aktif, Pasif dengan *End-Feel*, dan Isometrik melawan tahanan).
+  * **Tahap 3 (Pengukuran Terstandar & Uji Klinis):** Penilaian derajat nyeri (NRS Diam, Tekan, Gerak), tabel Manual Muscle Testing (MMT), Lingkup Gerak Sendi (LGS/ROM metode SFTR dengan format strip otomatis), instrumen sensorik terpadu (*Sensibilitas 5 Sistem*), serta uji klinis spesifik (*Special Tests* dinamis).
+* **Audit Formulir Mandiri (*Check Form Modal*):** Fitur inspeksi kelengkapan form sebelum disimpan, memandu praktisi langsung ke kolom yang belum lengkap dengan animasi sorot fokus.
+* **Penyimpanan Draf Lokal Otomatis (*Auto-Save & Restore Draft*):** Menjaga data input praktisi di *localStorage* agar tidak hilang jika terjadi kendala browser atau jaringan.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+### 5. 📄 Modul Lembar Status Klinik ICF (`PhysioKit/TreatmentPlan`)
+* **Tata Letak Baku Form Kepaniteraan Klinis II UMS:** Format matriks tabel formal yang disesuaikan secara presisi dengan berkas standar laporan klinik kepaniteraan fisioterapi.
+* **Kop Surat Dinamis & Fleksibel:**
+  * Pilihan Kop Resmi UMS.
+  * Pilihan Tanpa Kop (Polos).
+  * Pilihan Unggah Banner/Logo Kop Fasilitas Kesehatan (RS/Klinik) yang tersimpan permanen per akun pengguna.
+* **Panah Dua Arah $(\longleftrightarrow)$:** Penanda visual sejajar di garis pembatas tengah yang memisahkan seksi *Subjective (S)* dan *Objective (O)*.
+* **Pemetaan Diagnosis 5 Pilar ICF:** Tabel terstruktur mencakup *Body Function & Structure (A)*, *Activities (B)*, *Participation (C)*, serta faktor kontekstual *Personal (D)* dan *Environmental (E)*.
+* **Program Terapi Dosis FITT:** Perumusan tujuan jangka pendek/panjang serta kartu program terapi terukur (*Frequency, Intensity, Time, Type*).
+* **Tabel Komparasi Evaluasi Presisi:** Matriks berkala pemantau kemajuan terapi ($T_1, T_2, T_3, \dots$) pada skor GMFM, tingkat GMFCS, spastisitas otot (Modified Ashworth Scale), dan kekuatan otot (MMT) dengan lebar kolom terkunci (*fixed layout*) dan teks terpusat.
+* **Catatan Bebas Terapis:** Kolom catatan klinis yang dapat langsung disunting dari layar utama dan menyatu rapi tanpa kotak *border* saat dicetak.
+* **Sistem Tanda Tangan Cerdas:** Deteksi otomatis penandatangan dokumen (Fisioterapis Pembimbing dan Mahasiswa Praktikan) dengan fleksibilitas tata letak 1 atau 2 kolom.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+### 6. 📈 Modul Pemantauan Evaluasi Berkala (`ProgressTracking`)
+* **Pencatatan Sesi Terapi Lanjutan ($T_1, T_2, \dots$):** Form evaluasi periodik untuk memantau respons pasien terhadap program intervensi yang telah dijalankan.
+* **Pembaruan Metrik Motorik & Nyeri:** Input berkala untuk nilai NRS, rekam skor MMT, derajat spastisitas Ashworth, serta capaian persentase skor GMFM.
+* **Riwayat Perkembangan Pasien:** Penyimpanan terpusat yang terhubung langsung ke profil pasien dan tabel evaluasi pada laporan status klinik.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+### 7. 🧪 Modul Pengujian & Data Awal (`Seeder`)
+* **Seeder Kasus Pediatrik Terpadu (`PediatricCaseSeeder`):** Data siap uji untuk kasus anak nyata (**An. Fahreza**, 4 tahun, diagnosis *Cerebral Palsy Hemiplegi Spastik Sinistra*).
+* **Cakupan Data Lengkap:** Otomatis mengisi akun pembimbing klinis, akun mahasiswa, profil pasien, asesmen pediatrik lengkap (*Prenatal/Natal/Postnatal, TTV, MMT, Ashworth, Sensibilitas*), laporan ICF, hingga 3 sesi evaluasi berkala ($T_1$ s/d $T_3$).
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-=======
-# HealVelo
->>>>>>> ba7e70e40ee221b06aa04e24fe5f380800ca6c77
+---
