@@ -93,12 +93,14 @@ class ExampleTest extends TestCase
             ->assertOk()
             ->assertJson(['no_rm' => (string) (((int) $generatedRm) + 1)]);
 
-        // Baik Mahasiswa A, Mahasiswa B, maupun Supervisor memiliki hak akses yang sama ke data pasien
+        // Mahasiswa A (pembuat) dan Supervisor pembimbingnya dapat melihat pasien
         $this->actingAs($studentA)->get("/patients/{$patient->id}")->assertOk();
-        $this->actingAs($studentB)->get("/patients/{$patient->id}")->assertOk();
         $this->actingAs($supervisor)->get("/patients/{$patient->id}")->assertOk();
 
-        // Mahasiswa dapat menyimpan sesi evaluasi berkala
+        // Mahasiswa B (yang tidak mendata pasien ini) ditolak 403 Forbidden
+        $this->actingAs($studentB)->get("/patients/{$patient->id}")->assertForbidden();
+
+        // Mahasiswa A dapat menyimpan sesi evaluasi berkala
         $this->actingAs($studentA)->post('/progress-tracking', [
             'patient_id'      => $patient->id,
             'session_name'    => 'T1',
@@ -112,7 +114,7 @@ class ExampleTest extends TestCase
         ]);
     }
 
-    public function test_security_controls_for_supervisor_binding_shared_patients_and_date_validation(): void
+    public function test_security_controls_for_supervisor_binding_and_date_validation(): void
     {
         $supervisor = User::create([
             'name'              => 'Supervisor Keamanan',
@@ -143,23 +145,23 @@ class ExampleTest extends TestCase
         ]);
         $invalidReg->assertSessionHasErrors(['supervisor_id']);
 
-        // 2. Pasien tanpa user_id maupun dengan user_id dapat diakses bersama oleh Supervisor dan Mahasiswa
-        $sharedPatient = Patient::create([
-            'user_id'           => null,
+        // 2. Pasien mahasiswa hanya dapat diakses oleh dirinya sendiri dan pembimbingnya
+        $studentPatient = Patient::create([
+            'user_id'           => $studentPeer->id,
             'no_rm'             => '99991',
-            'name'              => 'Pasien Bersama',
+            'name'              => 'Pasien Mahasiswa Peer',
             'age'               => 30,
             'gender'            => 'Perempuan',
             'occupation'        => 'Swasta',
             'medical_diagnosis' => 'Low Back Pain',
         ]);
 
-        $this->actingAs($supervisor)->get("/patients/{$sharedPatient->id}")->assertOk();
-        $this->actingAs($studentPeer)->get("/patients/{$sharedPatient->id}")->assertOk();
+        $this->actingAs($studentPeer)->get("/patients/{$studentPatient->id}")->assertOk();
+        $this->actingAs($supervisor)->get("/patients/{$studentPatient->id}")->assertOk();
 
         // 3. Input evaluation_date tidak valid ditolak dengan error validasi (bukan 500 Carbon exception)
         $badDateResponse = $this->actingAs($studentPeer)->post('/progress-tracking', [
-            'patient_id'      => $sharedPatient->id,
+            'patient_id'      => $studentPatient->id,
             'session_name'    => 'T1',
             'evaluation_date' => 'bukan-tanggal-valid',
             'pain_nrs'        => ['diam' => 1, 'tekan' => 2, 'gerak' => 3],

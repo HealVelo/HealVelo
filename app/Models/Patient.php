@@ -30,13 +30,36 @@ class Patient extends Model
             return $query->whereRaw('1 = 0');
         }
 
-        // Baik mahasiswa maupun supervisor memiliki hak akses yang sama di dalam sistem klinis
-        return $query;
+        if ($user->role === 'admin') {
+            return $query;
+        }
+
+        // Supervisor dapat melihat pasien yang didata dirinya dan mahasiswa bimbingannya
+        if ($user->role === 'supervisor') {
+            $studentIds = $user->students()->pluck('id')->push($user->id)->all();
+
+            return $query->whereIn('user_id', $studentIds);
+        }
+
+        // Mahasiswa HANYA dapat melihat pasien yang dia data sendiri
+        return $query->where('user_id', $user->id);
     }
 
     public function canBeAccessedBy(?User $user): bool
     {
-        return $user !== null;
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->role === 'admin' || (int) $this->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if ($user->role === 'supervisor') {
+            return $user->students()->where('id', $this->user_id)->exists();
+        }
+
+        return false;
     }
 
     public function assessments(): HasMany

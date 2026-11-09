@@ -34,7 +34,11 @@ export default function Register({ supervisors = [] }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    post('/register');
+    post('/register', {
+      onError: (err) => {
+        console.error('Pendaftaran gagal validasi:', err);
+      },
+    });
   };
 
   return (
