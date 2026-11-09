@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { router } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
-import { ChevronRight, Activity, ShieldCheck, FileText, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, Activity, CheckCircle2 } from 'lucide-react';
 
 const STEPS = [
   { id: 1, title: 'Pemilihan Regio', subtitle: 'Pilih area muskuloskeletal' },
@@ -17,13 +17,6 @@ const BODY_AREAS = [
   { key: 'hip', label: 'Hip / Panggul', code: 'HIP-05', desc: 'Pelvis, labrum, fleksor/abduktor' },
   { key: 'knee', label: 'Knee / Lutut', code: 'KNE-06', desc: 'Ligamen (ACL/PCL), meniskus, patella' },
   { key: 'ankle', label: 'Ankle & Foot', code: 'ANK-07', desc: 'Talokrural, ligamen, arkus pedis' },
-];
-
-const GUIDE_STEPS = [
-  { id: '01', title: 'Pilih Regio Terkait', text: 'Tentukan area anatomi utama yang mengalami keluhan spesifik.' },
-  { id: '02', title: 'Input Pengukuran Terstandar', text: 'Lengkapi vital sign, LGS (SFTR), grading MMT, dan special test.' },
-  { id: '03', title: 'Generasi Diagnosis ICF', text: 'Sistem menyusun kode Body Function, Structure, dan Aktivitas.' },
-  { id: '04', title: 'Program Intervensi', text: 'Perumusan dosis terapi berbasis frekuensi, intensitas, waktu, dan tipe.' },
 ];
 
 export default function PhysioKitIndex() {

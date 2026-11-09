@@ -2,13 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Patient;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAssessmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        $patient = Patient::find($this->input('patient_id'));
+
+        return ! $patient || $patient->canBeAccessedBy($this->user());
     }
 
     protected function prepareForValidation(): void
@@ -35,7 +38,7 @@ class StoreAssessmentRequest extends FormRequest
     {
         return [
             'patient_id'                => ['required', 'exists:patients,id'],
-            'selected_regio'            => ['required', 'string'],
+            'selected_regio'            => ['required', 'string', 'max:100'],
             
             // Subjektif Umum & Pediatrik
             'keluhan_utama'             => ['required', 'string', 'max:1000'],
@@ -46,10 +49,10 @@ class StoreAssessmentRequest extends FormRequest
             'riwayat_prenatal'          => ['nullable', 'string', 'max:1000'],
             'riwayat_natal'             => ['nullable', 'string', 'max:1000'],
             'riwayat_postnatal'         => ['nullable', 'string', 'max:1000'],
-            'anamnesis_sistem'          => ['nullable', 'array'],
+            'anamnesis_sistem'          => ['nullable', 'array', 'max:25'],
 
             // Objektif & Tanda Vital
-            'vital_sign'                => ['nullable', 'array'],
+            'vital_sign'                => ['nullable', 'array', 'max:20'],
             'vital_sign.td'             => ['nullable', 'string', 'max:20'],
             'vital_sign.hr'             => ['nullable', 'numeric'],
             'vital_sign.rr'             => ['nullable', 'numeric'],
@@ -63,16 +66,16 @@ class StoreAssessmentRequest extends FormRequest
             'perkusi'                   => ['nullable', 'string', 'max:1000'],
 
             // Gerakan Dasar & Pengukuran Terstandar
-            'gerak_aktif'               => ['nullable', 'array'],
-            'gerak_pasif'               => ['nullable', 'array'],
-            'gerak_isometrik'           => ['nullable', 'array'],
-            'pain_nrs'                  => ['nullable', 'array'],
-            'mmt_rows'                  => ['nullable', 'array'],
-            'lgs_data'                  => ['nullable', 'array'],
-            'sensibilitas_records'      => ['nullable', 'array'],
+            'gerak_aktif'               => ['nullable', 'array', 'max:100'],
+            'gerak_pasif'               => ['nullable', 'array', 'max:100'],
+            'gerak_isometrik'           => ['nullable', 'array', 'max:100'],
+            'pain_nrs'                  => ['nullable', 'array', 'max:20'],
+            'mmt_rows'                  => ['nullable', 'array', 'max:100'],
+            'lgs_data'                  => ['nullable', 'array', 'max:50'],
+            'sensibilitas_records'      => ['nullable', 'array', 'max:50'],
             'gmfcs_level'               => ['nullable', 'string', 'max:50'],
             'gmfm_total'                => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'special_tests'             => ['nullable', 'array'],
+            'special_tests'             => ['nullable', 'array', 'max:100'],
         ];
     }
 }

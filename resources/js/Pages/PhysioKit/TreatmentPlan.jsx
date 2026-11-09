@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import Button from '@/Components/Button';
-import { 
-  Printer, 
-  ArrowLeft, 
-  Edit3, 
-  Building2, 
-  Upload, 
-  Trash2 
-} from 'lucide-react';
+import KopSignatureSettings from '@/Components/PhysioKit/KopSignatureSettings';
+import { Printer, ArrowLeft, Edit3 } from 'lucide-react';
 
 export default function TreatmentPlan({ 
   report = {}, 
@@ -105,14 +99,11 @@ export default function TreatmentPlan({
   const [supervisorMode, setSupervisorMode] = useState('registered');
 
   const [includeStudent, setIncludeStudent] = useState(!isSupervisorUser);
-  const defaultStudentId = !isSupervisorUser ? (currentUser?.id || availableStudents[0]?.id || '') : '';
   const defaultStudentName = !isSupervisorUser ? (currentUser?.name || availableStudents[0]?.name || '') : '';
   const defaultStudentNim = !isSupervisorUser ? (currentUser?.identifier_number || currentUser?.nim || availableStudents[0]?.identifier_number || '') : '';
 
-  const [selectedStudentId, setSelectedStudentId] = useState(defaultStudentId);
   const [studentName, setStudentName] = useState(defaultStudentName);
   const [studentNim, setStudentNim] = useState(defaultStudentNim);
-  const [studentMode, setStudentMode] = useState('registered');
 
   // Catatan klinis terapis
   const [physioNotes, setPhysioNotes] = useState(
@@ -138,27 +129,14 @@ export default function TreatmentPlan({
     }
   };
 
-  const handleStudentChange = (e) => {
-    const val = e.target.value;
-    if (val === 'manual') {
-      setStudentMode('manual');
-      setSelectedStudentId('');
-      setStudentName('');
-      setStudentNim('');
-    } else {
-      setStudentMode('registered');
-      setSelectedStudentId(val);
-      const found = availableStudents.find((s) => String(s.id) === String(val));
-      if (found) {
-        setStudentName(found.name);
-        setStudentNim(found.identifier_number || '');
-      }
-    }
-  };
-
   const vitalSign = assessment.vital_sign || {};
   const mmtData = assessment.mmt_rows || assessment.mmt_records || [];
   const gerakPasif = assessment.gerak_pasif || [];
+
+  const formatAshworthScore = (rawScore) => {
+    if (!rawScore) return '-';
+    return String(rawScore).replace(/^Grade\s+/i, '').trim() || '-';
+  };
 
   return (
     <AppLayout title={`Laporan Status Klinik ICF - ${patient.name || 'Pasien'}`}>
@@ -176,7 +154,7 @@ export default function TreatmentPlan({
             Lembar Laporan Status Klinik S1 Fisioterapi (Format ICF)
           </h1>
           <p className="text-xs text-slate-500 font-mono">
-            Sesuai Standar Form Kepaniteraan Klinis II UMS[cite: 7, 8]
+            Sesuai Standar Form Kepaniteraan Klinis II UMS
           </p>
         </div>
 
@@ -214,159 +192,27 @@ export default function TreatmentPlan({
 
       {/* PANEL PENGATURAN KOP & PENANDATANGAN */}
       {isEditingSignatures && (
-        <div className="mb-6 border border-slate-300 bg-white p-5 rounded-md shadow-xs print:hidden max-w-5xl mx-auto space-y-4 animate-in fade-in duration-150">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-            <span className="text-xs font-bold uppercase text-slate-800 flex items-center gap-2">
-              <Building2 size={16} className="text-blue-600" />
-              Pengaturan Kop Dokumen & Penandatangan
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            {/* Opsi Kop */}
-            <div className="border border-slate-200 p-3 rounded bg-slate-50 space-y-2.5">
-              <span className="block font-bold text-slate-800 text-[11px] uppercase">
-                Model Kop Dokumen
-              </span>
-              
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="kopOption"
-                    value="ums"
-                    checked={kopType === 'ums'}
-                    onChange={() => setKopType('ums')}
-                    className="text-blue-600 focus:ring-0"
-                  />
-                  <span>Format UMS[cite: 7, 8]</span>
-                </label>
-
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="kopOption"
-                    value="none"
-                    checked={kopType === 'none'}
-                    onChange={() => setKopType('none')}
-                    className="text-blue-600 focus:ring-0"
-                  />
-                  <span>Tanpa Kop (Polos)</span>
-                </label>
-
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="kopOption"
-                    value="custom"
-                    checked={kopType === 'custom'}
-                    onChange={() => setKopType('custom')}
-                    className="text-blue-600 focus:ring-0"
-                  />
-                  <span>Kop Kustom Instansi</span>
-                </label>
-              </div>
-
-              {kopType === 'custom' && (
-                <div className="pt-2 border-t border-slate-200 space-y-2">
-                  <label className="block text-[10px] text-slate-500">
-                    Upload Banner / Logo Kop Instansi (PNG/JPG):
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <label className="px-3 py-1.5 bg-white border border-slate-300 hover:border-slate-400 rounded cursor-pointer flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
-                      <Upload size={13} /> Pilih Gambar
-                      <input type="file" accept="image/*" onChange={handleUploadKop} className="hidden" />
-                    </label>
-                    {customKopImage && (
-                      <button
-                        type="button"
-                        onClick={handleResetKop}
-                        className="px-2 py-1.5 text-rose-600 hover:bg-rose-50 rounded border border-rose-200 text-[11px] font-semibold flex items-center gap-1"
-                      >
-                        <Trash2 size={13} /> Hapus Kop
-                      </button>
-                    )}
-                  </div>
-                  {customKopImage && (
-                    <div className="mt-2 border border-slate-200 bg-white p-1 rounded max-h-20 overflow-hidden">
-                      <img src={customKopImage} alt="Preview Kop" className="h-16 w-full object-contain" />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Opsi Penandatangan */}
-            <div className="border border-slate-200 p-3 rounded bg-slate-50 space-y-2">
-              <span className="block font-bold text-slate-800 text-[11px] uppercase">
-                Penandatangan Dokumen
-              </span>
-
-              <div>
-                <label className="block text-[10px] text-slate-500 mb-0.5">Fisioterapis / Clinical Educator:</label>
-                <select
-                  value={supervisorMode === 'manual' ? 'manual' : selectedSupervisorId}
-                  onChange={handleSupervisorChange}
-                  className="w-full p-1.5 border border-slate-300 rounded text-xs bg-white outline-none"
-                >
-                  <optgroup label="Supervisor Terdaftar">
-                    {availableSupervisors.map((sp) => (
-                      <option key={sp.id} value={sp.id}>{sp.name} ({sp.identifier_number || 'CI'})</option>
-                    ))}
-                  </optgroup>
-                  <option value="manual">-- Tulis Manual --</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  value={supervisorName}
-                  onChange={(e) => setSupervisorName(e.target.value)}
-                  placeholder="Nama & Gelar..."
-                  className="w-full p-1.5 border border-slate-300 rounded text-xs bg-white"
-                />
-                <input
-                  type="text"
-                  value={supervisorNik}
-                  onChange={(e) => setSupervisorNik(e.target.value)}
-                  placeholder="NIK / SIPF..."
-                  className="w-full p-1.5 border border-slate-300 rounded text-xs font-mono bg-white"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-slate-200">
-                <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 font-semibold mb-1">
-                  <input
-                    type="checkbox"
-                    checked={includeStudent}
-                    onChange={(e) => setIncludeStudent(e.target.checked)}
-                    className="rounded text-blue-600 focus:ring-0"
-                  />
-                  <span>Sertakan Kolom Tanda Tangan Mahasiswa Praktikan</span>
-                </label>
-                {includeStudent && (
-                  <div className="grid grid-cols-2 gap-2 mt-1">
-                    <input
-                      type="text"
-                      value={studentName}
-                      onChange={(e) => setStudentName(e.target.value)}
-                      placeholder="Nama Mahasiswa..."
-                      className="w-full p-1.5 border border-slate-300 rounded text-xs bg-white"
-                    />
-                    <input
-                      type="text"
-                      value={studentNim}
-                      onChange={(e) => setStudentNim(e.target.value)}
-                      placeholder="NIM..."
-                      className="w-full p-1.5 border border-slate-300 rounded text-xs font-mono bg-white"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <KopSignatureSettings
+          kopType={kopType}
+          setKopType={setKopType}
+          customKopImage={customKopImage}
+          onUploadKop={handleUploadKop}
+          onResetKop={handleResetKop}
+          availableSupervisors={availableSupervisors}
+          supervisorMode={supervisorMode}
+          selectedSupervisorId={selectedSupervisorId}
+          onSupervisorChange={handleSupervisorChange}
+          supervisorName={supervisorName}
+          setSupervisorName={setSupervisorName}
+          supervisorNik={supervisorNik}
+          setSupervisorNik={setSupervisorNik}
+          includeStudent={includeStudent}
+          setIncludeStudent={setIncludeStudent}
+          studentName={studentName}
+          setStudentName={setStudentName}
+          studentNim={studentNim}
+          setStudentNim={setStudentNim}
+        />
       )}
 
       {/* ========================================================================= */}
@@ -382,17 +228,17 @@ export default function TreatmentPlan({
             </div>
             <div className="flex-1 text-center px-2">
               <h2 className="text-xs font-bold uppercase tracking-wider">
-                Universitas Muhammadiyah Surakarta | S1 Fisioterapi | Form Kepaniteraan Klinis II[cite: 7]
+                Universitas Muhammadiyah Surakarta | S1 Fisioterapi | Form Kepaniteraan Klinis II
               </h2>
               <h3 className="text-sm font-extrabold uppercase mt-0.5 tracking-wide">
-                Laporan Status Klinik Fisioterapi Muskuloskeletal & Kasus Khusus[cite: 7]
+                Laporan Status Klinik Fisioterapi Muskuloskeletal & Kasus Khusus
               </h3>
               <p className="text-[10px] text-slate-600">
-                Berdasarkan Standar Klasifikasi Internasional ICF (World Health Organization)[cite: 7]
+                Berdasarkan Standar Klasifikasi Internasional ICF (World Health Organization)
               </p>
             </div>
             <div className="w-16 h-16 shrink-0 flex items-center justify-center font-mono text-[9px] text-slate-400">
-              FORM ICF[cite: 8]
+              FORM ICF
             </div>
           </div>
         )}
@@ -412,7 +258,7 @@ export default function TreatmentPlan({
           </div>
 
           <div className="col-span-4 p-2 space-y-1">
-            <strong className="block">Disorder/Disease:[cite: 7, 8]</strong>
+            <strong className="block">Disorder/Disease:</strong>
             <p className="font-bold underline text-slate-950">
               {patient.medical_diagnosis || '-'}
             </p>
@@ -442,12 +288,12 @@ export default function TreatmentPlan({
           {/* SISI KIRI: SUBJECTIVE ASSESSMENT (S) */}
           <div className="col-span-6 p-2.5 pr-5 space-y-2 border-r border-black">
             <div className="border-b border-black pb-1 font-bold uppercase bg-slate-100 px-1 text-[11px]">
-              Subjective Assessment (S)[cite: 7, 8]
+              Subjective Assessment (S)
             </div>
 
             <div>
               <strong className="block text-slate-900 text-[10px] uppercase font-bold">
-                Patient/Family Perception of Problem[cite: 7, 8]
+                Patient/Family Perception of Problem
               </strong>
               <p className="italic text-slate-800 pl-1 border-l-2 border-slate-300 mt-0.5">
                 "{assessment.keluhan_utama || '-'}"
@@ -461,17 +307,17 @@ export default function TreatmentPlan({
               </div>
 
               <div>
-                <strong className="block font-bold">Prenatal[cite: 7]</strong>
+                <strong className="block font-bold">Prenatal</strong>
                 <p className="text-slate-800">• {assessment.riwayat_prenatal || assessment.riwayat_penyakit_dahulu || '-'}</p>
               </div>
 
               <div>
-                <strong className="block font-bold">Natal[cite: 7]</strong>
+                <strong className="block font-bold">Natal</strong>
                 <p className="text-slate-800">• {assessment.riwayat_natal || assessment.riwayat_penyakit_penyerta || '-'}</p>
               </div>
 
               <div>
-                <strong className="block font-bold">Postnatal[cite: 7]</strong>
+                <strong className="block font-bold">Postnatal</strong>
                 <p className="text-slate-800">• {assessment.riwayat_postnatal || assessment.riwayat_pribadi_keluarga || '-'}</p>
               </div>
             </div>
@@ -480,12 +326,12 @@ export default function TreatmentPlan({
           {/* SISI KANAN: OBJECTIVE ASSESSMENT (O) */}
           <div className="col-span-6 p-2.5 pl-5 space-y-2">
             <div className="border-b border-black pb-1 font-bold uppercase bg-slate-100 px-1 text-[11px]">
-              Objective Assessment (O)[cite: 7, 8]
+              Objective Assessment (O)
             </div>
 
             {/* TTV */}
             <div className="space-y-0.5 text-[10px]">
-              <strong className="block font-bold uppercase text-slate-900">TTV[cite: 7]</strong>
+              <strong className="block font-bold uppercase text-slate-900">TTV</strong>
               <div className="grid grid-cols-3 gap-1 bg-slate-50 p-1 border border-slate-200 text-center">
                 <span>TD: {vitalSign.td || '-'} mmHg</span>
                 <span>HR: {vitalSign.hr || '-'} bpm</span>
@@ -498,7 +344,7 @@ export default function TreatmentPlan({
 
             {/* Perkusi */}
             <div className="text-[10px]">
-              <strong className="block font-bold uppercase text-slate-900">Perkusi[cite: 7]</strong>
+              <strong className="block font-bold uppercase text-slate-900">Perkusi</strong>
               <p className="text-slate-800">
                 {assessment.perkusi || '-'}
               </p>
@@ -507,16 +353,16 @@ export default function TreatmentPlan({
             {/* Tabel MMT Regio Awal */}
             <div className="border border-black text-[9.5px]">
               <div className="bg-slate-200 font-bold px-1.5 py-0.5 uppercase flex justify-between">
-                <span>MMT[cite: 7]</span>
+                <span>MMT</span>
                 <span className="font-mono text-[9px] font-normal">Pemeriksaan Awal</span>
               </div>
               <table className="w-full text-center divide-y divide-black">
                 <thead className="bg-slate-100 font-bold">
                   <tr>
-                    <th className="p-0.5 text-center border-r border-black w-24">Regio[cite: 7]</th>
-                    <th className="p-0.5 text-center border-r border-black">Grup Otot/Gerakan[cite: 7]</th>
-                    <th className="p-0.5 text-center border-r border-black w-16">MMT Dextra[cite: 7]</th>
-                    <th className="p-0.5 text-center w-16">MMT Sinistra[cite: 7]</th>
+                    <th className="p-0.5 text-center border-r border-black w-24">Regio</th>
+                    <th className="p-0.5 text-center border-r border-black">Grup Otot/Gerakan</th>
+                    <th className="p-0.5 text-center border-r border-black w-16">MMT Dextra</th>
+                    <th className="p-0.5 text-center w-16">MMT Sinistra</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -542,7 +388,7 @@ export default function TreatmentPlan({
 
             {/* Antropometri (Tanpa Lingkar Tubuh) */}
             <div className="text-[10px] space-y-0.5">
-              <strong className="block font-bold uppercase text-slate-900">Antropometri[cite: 7]</strong>
+              <strong className="block font-bold uppercase text-slate-900">Antropometri</strong>
               <div className="bg-slate-50 p-1 border border-slate-200 space-y-0.5">
                 <p>Inspeksi Statis: {assessment.inspeksi_statis || '-'}</p>
                 <p>Inspeksi Dinamis: {assessment.inspeksi_dinamis || '-'}</p>
@@ -552,7 +398,7 @@ export default function TreatmentPlan({
 
             {/* Sensibilitas */}
             <div className="text-[10px]">
-              <strong className="block font-bold uppercase text-slate-900">Sensibilitas[cite: 7]</strong>
+              <strong className="block font-bold uppercase text-slate-900">Sensibilitas</strong>
               <p className="text-slate-800 bg-slate-50 p-1 border border-slate-200">
                 {assessment.sensibilitas_records 
                   ? Object.entries(assessment.sensibilitas_records).map(([k, v]) => `${k}: ${v || '-'}`).join(', ')
@@ -562,7 +408,7 @@ export default function TreatmentPlan({
 
             {/* GMFM Total */}
             <div className="text-[10px]">
-              <strong className="block font-bold uppercase text-slate-900">GMFM[cite: 7]</strong>
+              <strong className="block font-bold uppercase text-slate-900">GMFM</strong>
               <p className="text-slate-800 font-mono bg-slate-50 p-1 border border-slate-200 text-center">
                 Skor Motorik Total: {evaluations[0]?.gmfm_score ? `${evaluations[0]?.gmfm_score}%` : (assessment.gmfm_total ? `${assessment.gmfm_total}%` : '-')}
               </p>
@@ -570,24 +416,24 @@ export default function TreatmentPlan({
 
             {/* GMFCS (Tepat di bawah GMFM) */}
             <div className="text-[10px]">
-              <strong className="block font-bold uppercase text-slate-900">GMFCS[cite: 7]</strong>
+              <strong className="block font-bold uppercase text-slate-900">GMFCS</strong>
               <p className="text-slate-800 font-mono bg-slate-50 p-1 border border-slate-200 text-center">
-                Tingkat Fungsional: {evaluations[0]?.gmfcs_level || assessment.gmfcs_level || 'Level II'}[cite: 7]
+                Tingkat Fungsional: {evaluations[0]?.gmfcs_level || assessment.gmfcs_level || '-'}
               </p>
             </div>
 
             {/* Tabel Ashworth Awal */}
             <div className="border border-black text-[9px]">
               <div className="bg-slate-200 font-bold px-1.5 py-0.5 uppercase">
-                ASHWORTH[cite: 7]
+                ASHWORTH
               </div>
               <table className="w-full text-center divide-y divide-black">
                 <thead className="bg-slate-100 font-bold">
                   <tr>
-                    <th className="p-0.5 w-6 border-r border-black text-center">No[cite: 7]</th>
-                    <th className="p-0.5 text-center border-r border-black">Group Otot[cite: 7]</th>
-                    <th className="p-0.5 border-r border-black w-14 text-center">Dextra[cite: 7]</th>
-                    <th className="p-0.5 w-14 text-center">Sinistra[cite: 7]</th>
+                    <th className="p-0.5 w-6 border-r border-black text-center">No</th>
+                    <th className="p-0.5 text-center border-r border-black">Group Otot</th>
+                    <th className="p-0.5 border-r border-black w-14 text-center">Dextra</th>
+                    <th className="p-0.5 w-14 text-center">Sinistra</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -596,7 +442,7 @@ export default function TreatmentPlan({
                       <tr key={idx}>
                         <td className="p-0.5 border-r border-black font-mono text-center">{idx + 1}</td>
                         <td className="p-0.5 text-center border-r border-black">{g.gerakan || '-'}</td>
-                        <td className="p-0.5 border-r border-black font-mono text-center">{g.endfeel_dex || '0'}</td>
+                        <td className="p-0.5 border-r border-black font-mono text-center">{g.endfeel_dex || '-'}</td>
                         <td className="p-0.5 font-mono text-center">{g.endfeel_sin || '-'}</td>
                       </tr>
                     ))
@@ -615,18 +461,18 @@ export default function TreatmentPlan({
         {/* 3. DIAGNOSE BASED ON ICF CONCEPT (3 KOLOM SEJAJAR: A, B, C) */}
         <div className="border-x border-b border-black">
           <div className="bg-slate-100 px-2 py-0.5 font-bold uppercase text-[10px] border-b border-black">
-            Diagnose based on ICF concept[cite: 7]
+            Diagnose based on ICF concept
           </div>
 
           <div className="grid grid-cols-3 divide-x divide-black text-[10px]">
             {/* Body Function & Body Structure (A) */}
             <div className="p-2 space-y-1.5">
               <strong className="block font-bold text-slate-950 border-b border-slate-300 pb-0.5">
-                Body Function and Body Structure (A)[cite: 7, 8]
+                Body Function and Body Structure (A)
               </strong>
               
               <div>
-                <span className="font-bold underline block">Body Function:[cite: 7]</span>
+                <span className="font-bold underline block">Body Function:</span>
                 {report.body_function && report.body_function.length > 0 ? (
                   report.body_function.map((item, idx) => (
                     <p key={idx} className="mt-0.5">
@@ -639,7 +485,7 @@ export default function TreatmentPlan({
               </div>
 
               <div className="pt-1 border-t border-slate-200">
-                <span className="font-bold underline block">Body Structures:[cite: 7]</span>
+                <span className="font-bold underline block">Body Structures:</span>
                 {report.body_structure && report.body_structure.length > 0 ? (
                   report.body_structure.map((item, idx) => (
                     <p key={idx} className="mt-0.5">
@@ -655,7 +501,7 @@ export default function TreatmentPlan({
             {/* Activities (B) */}
             <div className="p-2 space-y-1">
               <strong className="block font-bold text-slate-950 border-b border-slate-300 pb-0.5">
-                Activities (B)[cite: 7, 8]
+                Activities (B)
               </strong>
               {report.activities_participation && report.activities_participation.length > 0 ? (
                 report.activities_participation.map((item, idx) => (
@@ -671,7 +517,7 @@ export default function TreatmentPlan({
             {/* Participation (C) */}
             <div className="p-2 space-y-1">
               <strong className="block font-bold text-slate-950 border-b border-slate-300 pb-0.5">
-                Participation (C)[cite: 7, 8]
+                Participation (C)
               </strong>
               {report.activities_participation && report.activities_participation.length > 1 ? (
                 report.activities_participation.slice(1).map((item, idx) => (
@@ -690,7 +536,7 @@ export default function TreatmentPlan({
         <div className="border-x border-b border-black grid grid-cols-2 divide-x divide-black text-[10px]">
           <div className="p-2 space-y-1">
             <strong className="block font-bold border-b border-slate-300 pb-0.5">
-              Personal Factors (D)[cite: 7, 8]
+              Personal Factors (D)
             </strong>
             {report.personal_factors && report.personal_factors.length > 0 ? (
               report.personal_factors.map((item, idx) => (
@@ -703,7 +549,7 @@ export default function TreatmentPlan({
 
           <div className="p-2 space-y-1">
             <strong className="block font-bold border-b border-slate-300 pb-0.5">
-              Environmental Factors (E)[cite: 7, 8]
+              Environmental Factors (E)
             </strong>
             {report.environmental_factors && report.environmental_factors.length > 0 ? (
               report.environmental_factors.map((item, idx) => (
@@ -718,13 +564,13 @@ export default function TreatmentPlan({
         {/* 5. PLANNING PROGRAMS (Short-Term & Long-Term) */}
         <div className="border-x border-b border-black grid grid-cols-12 divide-x divide-black text-[10px]">
           <div className="col-span-1 bg-slate-100 flex items-center justify-center p-1 text-center font-bold uppercase text-[9px] tracking-widest [writing-mode:vertical-lr] rotate-180">
-            Planning Programs[cite: 7, 8]
+            Planning Programs
           </div>
 
           <div className="col-span-11 grid grid-cols-2 divide-x divide-black p-2">
             <div className="pr-2 space-y-1">
               <strong className="block font-bold border-b border-slate-300 pb-0.5">
-                Short-Term[cite: 7, 8]
+                Short-Term
               </strong>
               {report.short_term_goals && report.short_term_goals.length > 0 ? (
                 report.short_term_goals.map((g, i) => <p key={i}>• {renderIcfText(g)}</p>)
@@ -735,7 +581,7 @@ export default function TreatmentPlan({
 
             <div className="pl-2 space-y-1">
               <strong className="block font-bold border-b border-slate-300 pb-0.5">
-                Long-Term[cite: 7, 8]
+                Long-Term
               </strong>
               {report.long_term_goals && report.long_term_goals.length > 0 ? (
                 report.long_term_goals.map((g, i) => <p key={i}>• {renderIcfText(g)}</p>)
@@ -749,7 +595,7 @@ export default function TreatmentPlan({
         {/* 6. ACTUAL INTERVENTION (Dosis FITT) */}
         <div className="border-x border-b border-black text-[10px]">
           <div className="bg-slate-100 px-2 py-0.5 font-bold uppercase text-[10px] border-b border-black">
-            Physiotherapy Intervention (with Frequency, Intensity, Type, Time)[cite: 7, 8]
+            Physiotherapy Intervention (with Frequency, Intensity, Type, Time)
           </div>
 
           <div className="p-2 grid grid-cols-2 gap-2">
@@ -774,28 +620,28 @@ export default function TreatmentPlan({
         {/* 7. EVALUATION & PROGRESS SESSIONS (TABEL PRESISI TIDAK MELEBIHI GARIS LUAR) */}
         <div className="border-x border-b border-black text-[9.5px]">
           <div className="bg-slate-100 px-2 py-0.5 font-bold uppercase text-[10px] border-b border-black">
-            Evaluation[cite: 7, 8]
+            Evaluation
           </div>
 
           {/* Ringkasan Skor Evaluasi Dinamis */}
           <div className="p-2 border-b border-black grid grid-cols-2 divide-x divide-black bg-slate-50">
             <div className="pr-2 space-y-0.5 text-center">
-              <strong className="block font-bold uppercase">GMFM Motorik[cite: 7]</strong>
+              <strong className="block font-bold uppercase">GMFM Motorik</strong>
               <p className="font-mono">
                 {evaluations.length > 0 ? (
-                  evaluations.map((ev, i) => `${ev.session_name || `T${i+1}`} = ${ev.gmfm_score || 0}%`).join(' | ')
+                  evaluations.map((ev, i) => `${ev.session_name || `T${i+1}`} = ${ev.gmfm_score ?? '-'}%`).join(' | ')
                 ) : (
                   'Belum ada evaluasi berkala'
                 )}
               </p>
             </div>
             <div className="pl-2 space-y-0.5 text-center">
-              <strong className="block font-bold uppercase">GMFCS[cite: 7]</strong>
+              <strong className="block font-bold uppercase">GMFCS</strong>
               <p className="font-mono">
                 {evaluations.length > 0 ? (
-                  evaluations.map((ev, i) => `${ev.session_name || `T${i+1}`} = Level II`).join(' | ')
+                  evaluations.map((ev, i) => `${ev.session_name || `T${i+1}`} = ${ev.gmfcs_level || assessment.gmfcs_level || '-'}`).join(' | ')
                 ) : (
-                  '-'
+                  assessment.gmfcs_level || '-'
                 )}
               </p>
             </div>
@@ -807,36 +653,36 @@ export default function TreatmentPlan({
             {/* TABEL KOMPARASI ASHWORTH (Terkunci Lebar Kolomnya) */}
             <div className="p-1">
               <strong className="block text-center font-bold uppercase pb-1 text-[9px]">
-                Tabel Evaluasi Spastisitas Ashworth Antar Sesi[cite: 7]
+                Tabel Evaluasi Spastisitas Ashworth Antar Sesi
               </strong>
               <div className="border border-black overflow-hidden">
                 <table className="table-fixed w-full text-center divide-y divide-black text-[8px]">
                   <thead className="bg-slate-100 font-bold">
                     <tr>
-                      <th rowSpan="2" className="w-5 p-0.5 border-r border-black text-center">No[cite: 7]</th>
-                      <th rowSpan="2" className="p-0.5 text-center border-r border-black truncate">Group Otot[cite: 7]</th>
+                      <th rowSpan="2" className="w-5 p-0.5 border-r border-black text-center">No</th>
+                      <th rowSpan="2" className="p-0.5 text-center border-r border-black truncate">Group Otot</th>
                       {evaluations.length > 0 ? (
                         evaluations.map((ev, i) => (
                           <th key={i} colSpan="2" className="p-0.5 border-r last:border-r-0 border-black text-center truncate">
-                            {ev.session_name || `T${i+1}`}[cite: 7]
+                            {ev.session_name || `T${i+1}`}
                           </th>
                         ))
                       ) : (
-                        <th colSpan="2" className="p-0.5 text-center">T1[cite: 7]</th>
+                        <th colSpan="2" className="p-0.5 text-center">T1</th>
                       )}
                     </tr>
                     <tr className="border-t border-black">
                       {evaluations.length > 0 ? (
                         evaluations.map((_, i) => (
                           <React.Fragment key={i}>
-                            <th className="w-4 p-0.5 border-r border-black text-center">D[cite: 7]</th>
-                            <th className="w-4 p-0.5 border-r last:border-r-0 border-black text-center">S[cite: 7]</th>
+                            <th className="w-4 p-0.5 border-r border-black text-center">D</th>
+                            <th className="w-4 p-0.5 border-r last:border-r-0 border-black text-center">S</th>
                           </React.Fragment>
                         ))
                       ) : (
                         <>
-                          <th className="w-4 p-0.5 border-r border-black text-center">D[cite: 7]</th>
-                          <th className="w-4 p-0.5 text-center">S[cite: 7]</th>
+                          <th className="w-4 p-0.5 border-r border-black text-center">D</th>
+                          <th className="w-4 p-0.5 text-center">S</th>
                         </>
                       )}
                     </tr>
@@ -850,16 +696,16 @@ export default function TreatmentPlan({
                           {evaluations.length > 0 ? (
                             evaluations.map((ev, eIdx) => (
                               <React.Fragment key={eIdx}>
-                                <td className="p-0.5 border-r border-black text-center">0</td>
+                                <td className="p-0.5 border-r border-black text-center">{g.endfeel_dex || '-'}</td>
                                 <td className="p-0.5 border-r last:border-r-0 border-black text-center">
-                                  {ev.ashworth_score?.includes('Grade') ? ev.ashworth_score.replace('Grade ', '') : '1+'}
+                                  {formatAshworthScore(ev.ashworth_score)}
                                 </td>
                               </React.Fragment>
                             ))
                           ) : (
                             <>
-                              <td className="p-0.5 border-r border-black text-center">0</td>
-                              <td className="p-0.5 text-center">-</td>
+                              <td className="p-0.5 border-r border-black text-center">{g.endfeel_dex || '-'}</td>
+                              <td className="p-0.5 text-center">{g.endfeel_sin || '-'}</td>
                             </>
                           )}
                         </tr>
@@ -879,36 +725,36 @@ export default function TreatmentPlan({
             {/* TABEL KOMPARASI MMT (Terkunci Lebar Kolomnya) */}
             <div className="p-1">
               <strong className="block text-center font-bold uppercase pb-1 text-[9px]">
-                Tabel Evaluasi Kekuatan Otot (MMT) Antar Sesi[cite: 7]
+                Tabel Evaluasi Kekuatan Otot (MMT) Antar Sesi
               </strong>
               <div className="border border-black overflow-hidden">
                 <table className="table-fixed w-full text-center divide-y divide-black text-[8px]">
                   <thead className="bg-slate-100 font-bold">
                     <tr>
-                      <th rowSpan="2" className="w-12 p-0.5 text-center border-r border-black truncate">Regio[cite: 7]</th>
-                      <th rowSpan="2" className="p-0.5 text-center border-r border-black truncate">Grup[cite: 7]</th>
+                      <th rowSpan="2" className="w-12 p-0.5 text-center border-r border-black truncate">Regio</th>
+                      <th rowSpan="2" className="p-0.5 text-center border-r border-black truncate">Grup</th>
                       {evaluations.length > 0 ? (
                         evaluations.map((ev, i) => (
                           <th key={i} colSpan="2" className="p-0.5 border-r last:border-r-0 border-black text-center truncate">
-                            {ev.session_name || `T${i+1}`}[cite: 7]
+                            {ev.session_name || `T${i+1}`}
                           </th>
                         ))
                       ) : (
-                        <th colSpan="2" className="p-0.5 text-center">T1[cite: 7]</th>
+                        <th colSpan="2" className="p-0.5 text-center">T1</th>
                       )}
                     </tr>
                     <tr className="border-t border-black">
                       {evaluations.length > 0 ? (
                         evaluations.map((_, i) => (
                           <React.Fragment key={i}>
-                            <th className="w-4 p-0.5 border-r border-black text-center">D[cite: 7]</th>
-                            <th className="w-4 p-0.5 border-r last:border-r-0 border-black text-center">S[cite: 7]</th>
+                            <th className="w-4 p-0.5 border-r border-black text-center">D</th>
+                            <th className="w-4 p-0.5 border-r last:border-r-0 border-black text-center">S</th>
                           </React.Fragment>
                         ))
                       ) : (
                         <>
-                          <th className="w-4 p-0.5 border-r border-black text-center">D[cite: 7]</th>
-                          <th className="w-4 p-0.5 text-center">S[cite: 7]</th>
+                          <th className="w-4 p-0.5 border-r border-black text-center">D</th>
+                          <th className="w-4 p-0.5 text-center">S</th>
                         </>
                       )}
                     </tr>
@@ -926,8 +772,8 @@ export default function TreatmentPlan({
                               const matchRow = ev.mmt_records?.find(r => r.gerakan === m.gerakan);
                               return (
                                 <React.Fragment key={eIdx}>
-                                  <td className="p-0.5 border-r border-black text-center">{matchRow?.dex ?? m.dex_skor ?? '5'}</td>
-                                  <td className="p-0.5 border-r last:border-r-0 border-black text-center">{matchRow?.sin ?? m.sin_skor ?? '4'}</td>
+                                  <td className="p-0.5 border-r border-black text-center">{matchRow?.dex ?? m.dex_skor ?? '-'}</td>
+                                  <td className="p-0.5 border-r last:border-r-0 border-black text-center">{matchRow?.sin ?? m.sin_skor ?? '-'}</td>
                                 </React.Fragment>
                               );
                             })
@@ -959,7 +805,7 @@ export default function TreatmentPlan({
           
           <div className="text-[10px] leading-relaxed">
             <strong className="block uppercase font-bold text-slate-900 mb-0.5">
-              CATATAN:[cite: 7, 8]
+              CATATAN:
             </strong>
             <p className="text-slate-800">
               {physioNotes || '-'}
@@ -970,37 +816,37 @@ export default function TreatmentPlan({
           {includeStudent ? (
             <div className="pt-3 grid grid-cols-2 gap-4 text-center text-[10px] break-inside-avoid">
               <div>
-                <p>Tanda Tangan,[cite: 7, 8]</p>
+                <p>Tanda Tangan,</p>
                 <div className="h-14 flex items-end justify-center">
                   <span className="font-serif italic text-slate-300 select-none">( Tanda Tangan )</span>
                 </div>
                 <strong className="block underline text-slate-900 mt-1">
-                  {studentName || '( Nama Lengkap Mahasiswa )'}[cite: 8]
+                  {studentName || '( Nama Lengkap Mahasiswa )'}
                 </strong>
                 <span className="font-mono text-slate-600 block">
-                  NIM: {studentNim || '....................'}[cite: 7, 8]
+                  NIM: {studentNim || '....................'}
                 </span>
               </div>
 
               <div>
-                <p>Surakarta, {todayFormatted}[cite: 7]</p>
-                <p className="mt-0.5">Tanda Tangan,[cite: 7, 8]</p>
+                <p>Surakarta, {todayFormatted}</p>
+                <p className="mt-0.5">Tanda Tangan,</p>
                 <div className="h-12 flex items-end justify-center">
                   <span className="font-serif italic text-slate-300 select-none">( Tanda Tangan & Cap )</span>
                 </div>
                 <strong className="block underline text-slate-900 mt-1">
-                  {supervisorName || '( Nama Lengkap Clinical Educator )'}[cite: 8]
+                  {supervisorName || '( Nama Lengkap Clinical Educator )'}
                 </strong>
                 <span className="font-mono text-slate-600 block">
-                  NIK / SIPF: {supervisorNik || '....................'}[cite: 7, 8]
+                  NIK / SIPF: {supervisorNik || '....................'}
                 </span>
               </div>
             </div>
           ) : (
             <div className="pt-3 flex justify-end text-center text-[10px] break-inside-avoid">
               <div className="w-64">
-                <p>Surakarta, {todayFormatted}[cite: 7]</p>
-                <p className="mt-0.5">Fisioterapis Penanggung Jawab,[cite: 7, 8]</p>
+                <p>Surakarta, {todayFormatted}</p>
+                <p className="mt-0.5">Fisioterapis Penanggung Jawab,</p>
                 <div className="h-14 flex items-end justify-center">
                   <span className="font-serif italic text-slate-300 select-none">( Tanda Tangan & Stempel )</span>
                 </div>
@@ -1008,7 +854,7 @@ export default function TreatmentPlan({
                   {supervisorName || '( ........................................ )'}
                 </strong>
                 <span className="font-mono text-slate-600 block">
-                  SIPF / NIK: {supervisorNik || '....................'}[cite: 7, 8]
+                  SIPF / NIK: {supervisorNik || '....................'}
                 </span>
               </div>
             </div>

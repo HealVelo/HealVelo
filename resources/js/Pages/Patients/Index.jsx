@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, router } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import Button from '@/Components/Button';
@@ -11,8 +11,9 @@ import {
   Upload, 
   CheckCircle2, 
   ArrowRight,
-  Sparkles,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 const BODY_REGIONS = [
@@ -28,12 +29,31 @@ const BODY_REGIONS = [
 
 const RELIGIONS = ['Islam', 'Kristen Protestan', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'];
 
-export default function PatientIndex({ patients = [], currentPage = 1, totalPages = 1, totalPatients = 0 }) {
-  const [searchTerm, setSearchTerm] = useState('');
+export default function PatientIndex({ patients = [], currentPage = 1, totalPages = 1, totalPatients = 0, search = '' }) {
+  const [searchTerm, setSearchTerm] = useState(search || '');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedPatientForAssessment, setSelectedPatientForAssessment] = useState(null);
   const [selectedRegionKey, setSelectedRegionKey] = useState('');
   const [isGeneratingRm, setIsGeneratingRm] = useState(false);
+
+  useEffect(() => {
+    if (searchTerm === (search || '')) return;
+    const timer = setTimeout(() => {
+      router.get(
+        '/patients',
+        searchTerm.trim() ? { search: searchTerm.trim() } : {},
+        { preserveState: true, preserveScroll: true, replace: true }
+      );
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm, search]);
+
+  const handlePageChange = (targetPage) => {
+    if (targetPage < 1 || targetPage > totalPages || targetPage === currentPage) return;
+    const params = { page: targetPage };
+    if (searchTerm.trim()) params.search = searchTerm.trim();
+    router.get('/patients', params, { preserveState: true, preserveScroll: true });
+  };
 
   const { data, setData, post, processing, errors, reset, setError, clearErrors } = useForm({
     name: '',
@@ -235,9 +255,46 @@ export default function PatientIndex({ patients = [], currentPage = 1, totalPage
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-xs text-slate-500 px-1">
-        <span>Halaman <strong className="text-slate-800">{currentPage}</strong> dari {totalPages || 1}</span>
-        <span className="text-[11px] text-slate-400">Klik baris pasien untuk membuka detail rekam medis</span>
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500 px-1">
+        <div>
+          <span>Halaman <strong className="text-slate-800">{currentPage}</strong> dari {totalPages || 1}</span>
+          <span className="ml-3 text-[11px] text-slate-400">Klik baris pasien untuk membuka detail rekam medis</span>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage <= 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-xs font-semibold text-slate-700"
+            >
+              <ChevronLeft size={13} /> Seb.
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                type="button"
+                onClick={() => handlePageChange(pageNum)}
+                className={`h-7 min-w-7 px-2 rounded-xs font-mono font-bold text-xs transition-colors ${
+                  pageNum === currentPage
+                    ? 'bg-blue-600 text-white border border-blue-600'
+                    : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-xs font-semibold text-slate-700"
+            >
+              Ber. <ChevronRight size={13} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* MODAL 1: TAMBAH PASIEN BARU */}

@@ -17,6 +17,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('identifier_number', 50)->nullable()->comment('NIM Mahasiswa atau NIK Pembimbing');
+            $table->string('role', 30)->default('mahasiswa');
+            $table->foreignId('supervisor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->rememberToken();
             $table->timestamps();
         });

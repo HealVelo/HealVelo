@@ -41,6 +41,7 @@ class PediatricCaseSeeder extends Seeder
         $patient = Patient::updateOrCreate(
             ['no_rm' => '10871'],
             [
+                'user_id'           => $student->id,
                 'name'              => 'An. Fahreza',
                 'age'               => 4,
                 'gender'            => 'Laki-Laki',

@@ -13,13 +13,16 @@ return new class extends Migration
             $table->foreignId('patient_id')->constrained('patients')->onDelete('cascade');
             $table->string('selected_regio')->nullable(); // cervical, shoulder, knee, spine, dll
 
-            // Data Subjektif (Anamnesis)
+            // Data Subjektif (Anamnesis Umum & Pediatrik)
             $table->text('keluhan_utama')->nullable();
             $table->text('riwayat_penyakit_sekarang')->nullable();
             $table->text('riwayat_penyakit_dahulu')->nullable();
             $table->text('riwayat_penyakit_penyerta')->nullable();
             $table->text('riwayat_pribadi_keluarga')->nullable();
-            $table->jsonb('anamnesis_sistem')->nullable(); // Kepala/leher, respirasi, muskuloskeletal, nervorum, dll
+            $table->text('riwayat_prenatal')->nullable();
+            $table->text('riwayat_natal')->nullable();
+            $table->text('riwayat_postnatal')->nullable();
+            $table->jsonb('anamnesis_sistem')->nullable();
 
             // Data Objektif (Pemeriksaan Fisik)
             $table->jsonb('vital_sign')->nullable(); // TD, HR, RR, Temp, TB, BB
@@ -28,13 +31,17 @@ return new class extends Migration
             $table->text('palpasi')->nullable();
             $table->text('perkusi')->nullable();
 
-            // Gerakan Dasar & Pemeriksaan
-            $table->jsonb('gerak_dasar')->nullable(); // Aktif, Pasif, Isometrik
-            $table->jsonb('pain_nrs')->nullable(); // Diam, Tekan, Gerak (Dextra & Sinistra)
-            $table->jsonb('mmt_data')->nullable(); // Nilai kekuatan otot
-            $table->jsonb('lgs_rom_data')->nullable(); // Notasi SFTR ROM
-            $table->jsonb('antropometri')->nullable();
-            $table->jsonb('special_tests')->nullable(); // Hasil tes spesifik yang positif/negatif
+            // Gerakan Dasar & Pengukuran Terstandar
+            $table->jsonb('gerak_aktif')->nullable();
+            $table->jsonb('gerak_pasif')->nullable();
+            $table->jsonb('gerak_isometrik')->nullable();
+            $table->jsonb('pain_nrs')->nullable();
+            $table->jsonb('mmt_rows')->nullable();
+            $table->jsonb('lgs_data')->nullable();
+            $table->jsonb('sensibilitas_records')->nullable();
+            $table->string('gmfcs_level', 50)->nullable();
+            $table->decimal('gmfm_total', 5, 2)->nullable();
+            $table->jsonb('special_tests')->nullable();
 
             $table->timestamps();
         });

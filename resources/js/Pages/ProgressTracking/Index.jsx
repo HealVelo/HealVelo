@@ -126,11 +126,7 @@ export default function ProgressTrackingIndex({ patients = [], selectedPatient =
         notes: ev.clinical_notes || '',
       }));
     }
-    return [
-      { session: 'T1', date: '2026-08-15', gmfm: 65, pain: 6, ashworth: 'Grade 2 (Sedang)', notes: 'Nyeri gerak saat fleksi lumbal masih dominan.' },
-      { session: 'T2', date: '2026-08-22', gmfm: 75.5, pain: 4, ashworth: 'Grade 1 (Ringan)', notes: 'Ketegangan otot berkurang paska stretching.' },
-      { session: 'T3', date: '2026-08-29', gmfm: 88, pain: 2, ashworth: 'Grade 0 (Normal)', notes: 'Pasien mampu duduk bekerja dengan core stability meningkat.' },
-    ];
+    return [];
   }, [evaluations, todayStr]);
 
   // Kalkulasi Chart SVG Responsif
@@ -285,163 +281,180 @@ export default function ProgressTrackingIndex({ patients = [], selectedPatient =
                   </div>
                 </div>
 
-                {/* Grafik Visual Kurva Pemulihan */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                        Grafik Perkembangan Terapi
-                      </h3>
-                      <p className="text-[11px] text-slate-400">Tren perubahan nilai motorik dan penurunan nyeri</p>
-                    </div>
+                {timelineData.length > 0 ? (
+                  <>
+                    {/* Grafik Visual Kurva Pemulihan */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                        <div>
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                            Grafik Perkembangan Terapi
+                          </h3>
+                          <p className="text-[11px] text-slate-400">Tren perubahan nilai motorik dan penurunan nyeri</p>
+                        </div>
 
-                    <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 text-xs self-start">
-                      <button
-                        type="button"
-                        onClick={() => setActiveMetricTab('gmfm')}
-                        className={`px-3 py-1 font-bold rounded-lg transition-all ${
-                          activeMetricTab === 'gmfm' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                      >
-                        GMFM Motorik (%)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveMetricTab('nrs')}
-                        className={`px-3 py-1 font-bold rounded-lg transition-all ${
-                          activeMetricTab === 'nrs' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                      >
-                        Skala Nyeri (NRS)
-                      </button>
-                    </div>
-                  </div>
+                        <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 text-xs self-start">
+                          <button
+                            type="button"
+                            onClick={() => setActiveMetricTab('gmfm')}
+                            className={`px-3 py-1 font-bold rounded-lg transition-all ${
+                              activeMetricTab === 'gmfm' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            GMFM Motorik (%)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveMetricTab('nrs')}
+                            className={`px-3 py-1 font-bold rounded-lg transition-all ${
+                              activeMetricTab === 'nrs' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            Skala Nyeri (NRS)
+                          </button>
+                        </div>
+                      </div>
 
-                  {/* SVG Chart Tanpa Overflow Menabrak */}
-                  <div className="w-full h-52 bg-slate-50/50 border border-slate-100 rounded-xl pt-2 overflow-hidden relative">
-                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full">
-                      {[0.2, 0.45, 0.7].map((r, i) => (
-                        <line 
-                          key={i} 
-                          x1={padLeft} 
-                          y1={chartHeight * r} 
-                          x2={chartWidth - padRight} 
-                          y2={chartHeight * r} 
-                          stroke="#e2e8f0" 
-                          strokeDasharray="3 3" 
-                        />
-                      ))}
-                      <path 
-                        d={lineD} 
-                        fill="none" 
-                        stroke={activeMetricTab === 'gmfm' ? '#2563eb' : '#e11d48'} 
-                        strokeWidth="2.5" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                      />
-                      {chartPoints.map((pt, idx) => (
-                        <g key={idx}>
-                          <circle 
-                            cx={pt.x} 
-                            cy={pt.y} 
-                            r="4.5" 
-                            fill="#ffffff" 
+                      {/* SVG Chart Tanpa Overflow Menabrak */}
+                      <div className="w-full h-52 bg-slate-50/50 border border-slate-100 rounded-xl pt-2 overflow-hidden relative">
+                        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full">
+                          {[0.2, 0.45, 0.7].map((r, i) => (
+                            <line 
+                              key={i} 
+                              x1={padLeft} 
+                              y1={chartHeight * r} 
+                              x2={chartWidth - padRight} 
+                              y2={chartHeight * r} 
+                              stroke="#e2e8f0" 
+                              strokeDasharray="3 3" 
+                            />
+                          ))}
+                          <path 
+                            d={lineD} 
+                            fill="none" 
                             stroke={activeMetricTab === 'gmfm' ? '#2563eb' : '#e11d48'} 
                             strokeWidth="2.5" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
                           />
-                          <text 
-                            x={pt.x} 
-                            y={pt.y - 8} 
-                            textAnchor="middle" 
-                            className="text-[10px] font-mono font-bold fill-slate-800"
-                          >
-                            {pt.val}{activeMetricTab === 'gmfm' ? '%' : ''}
-                          </text>
-                          <text 
-                            x={pt.x} 
-                            y={chartHeight - 8} 
-                            textAnchor="middle" 
-                            className="text-[9px] font-mono font-bold fill-slate-400"
-                          >
-                            {pt.item.session}
-                          </text>
-                        </g>
-                      ))}
-                    </svg>
-                  </div>
-
-                  {/* Kartu Ringkasan Sesi Fleksibel */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {timelineData.map((d, index) => (
-                      <div key={index} className="border border-slate-200 bg-white p-3 rounded-xl text-center shadow-xs">
-                        <span className="text-[10px] font-mono font-bold text-blue-700 block truncate">
-                          {d.session} ({d.date.substring(5)})
-                        </span>
-                        <strong className="text-sm font-extrabold text-slate-900 block my-0.5">
-                          {activeMetricTab === 'gmfm' ? `${d.gmfm}%` : `Nyeri: ${d.pain}/10`}
-                        </strong>
-                        <span className="text-[10px] text-slate-400 block font-mono truncate" title={d.ashworth}>
-                          {d.ashworth}
-                        </span>
+                          {chartPoints.map((pt, idx) => (
+                            <g key={idx}>
+                              <circle 
+                                cx={pt.x} 
+                                cy={pt.y} 
+                                r="4.5" 
+                                fill="#ffffff" 
+                                stroke={activeMetricTab === 'gmfm' ? '#2563eb' : '#e11d48'} 
+                                strokeWidth="2.5" 
+                              />
+                              <text 
+                                x={pt.x} 
+                                y={pt.y - 8} 
+                                textAnchor="middle" 
+                                className="text-[10px] font-mono font-bold fill-slate-800"
+                              >
+                                {pt.val}{activeMetricTab === 'gmfm' ? '%' : ''}
+                              </text>
+                              <text 
+                                x={pt.x} 
+                                y={chartHeight - 8} 
+                                textAnchor="middle" 
+                                className="text-[9px] font-mono font-bold fill-slate-400"
+                              >
+                                {pt.item.session}
+                              </text>
+                            </g>
+                          ))}
+                        </svg>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Matriks Komparasi Tabel */}
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    Matriks Komparasi Antar Sesi Kunjungan
-                  </h3>
-                  <div className="overflow-x-auto border border-slate-100 rounded-xl">
-                    <table className="min-w-full divide-y divide-slate-200 text-xs">
-                      <thead className="bg-slate-800 text-white font-bold uppercase text-[10px]">
-                        <tr>
-                          <th className="px-4 py-2.5 text-left w-1/4 border-r border-slate-700">Parameter</th>
-                          {timelineData.map((d, idx) => (
-                            <th key={idx} className="px-4 py-2.5 text-center border-r border-slate-700 last:border-r-0 bg-blue-900">
+                      {/* Kartu Ringkasan Sesi Fleksibel */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        {timelineData.map((d, index) => (
+                          <div key={index} className="border border-slate-200 bg-white p-3 rounded-xl text-center shadow-xs">
+                            <span className="text-[10px] font-mono font-bold text-blue-700 block truncate">
                               {d.session} ({d.date.substring(5)})
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        <tr>
-                          <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">GMFM Motorik</td>
-                          {timelineData.map((d, i) => (
-                            <td key={i} className="px-4 py-2.5 text-center font-mono font-bold text-blue-700 border-r border-slate-100 last:border-r-0">
-                              {d.gmfm}%
-                            </td>
-                          ))}
-                        </tr>
-                        <tr>
-                          <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">Nyeri Gerak (NRS)</td>
-                          {timelineData.map((d, i) => (
-                            <td key={i} className="px-4 py-2.5 text-center font-mono font-bold text-rose-600 border-r border-slate-100 last:border-r-0">
-                              {d.pain} / 10
-                            </td>
-                          ))}
-                        </tr>
-                        <tr>
-                          <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">Spastisitas Ashworth</td>
-                          {timelineData.map((d, i) => (
-                            <td key={i} className="px-4 py-2.5 text-center font-mono text-slate-800 border-r border-slate-100 last:border-r-0">
+                            </span>
+                            <strong className="text-sm font-extrabold text-slate-900 block my-0.5">
+                              {activeMetricTab === 'gmfm' ? `${d.gmfm}%` : `Nyeri: ${d.pain}/10`}
+                            </strong>
+                            <span className="text-[10px] text-slate-400 block font-mono truncate" title={d.ashworth}>
                               {d.ashworth}
-                            </td>
-                          ))}
-                        </tr>
-                        <tr>
-                          <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">Catatan Terapis</td>
-                          {timelineData.map((d, i) => (
-                            <td key={i} className="px-4 py-2.5 text-slate-600 italic text-[11px] border-r border-slate-100 last:border-r-0">
-                              {d.notes || '-'}
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Matriks Komparasi Tabel */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                        Matriks Komparasi Antar Sesi Kunjungan
+                      </h3>
+                      <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                        <table className="min-w-full divide-y divide-slate-200 text-xs">
+                          <thead className="bg-slate-800 text-white font-bold uppercase text-[10px]">
+                            <tr>
+                              <th className="px-4 py-2.5 text-left w-1/4 border-r border-slate-700">Parameter</th>
+                              {timelineData.map((d, idx) => (
+                                <th key={idx} className="px-4 py-2.5 text-center border-r border-slate-700 last:border-r-0 bg-blue-900">
+                                  {d.session} ({d.date.substring(5)})
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 bg-white">
+                            <tr>
+                              <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">GMFM Motorik</td>
+                              {timelineData.map((d, i) => (
+                                <td key={i} className="px-4 py-2.5 text-center font-mono font-bold text-blue-700 border-r border-slate-100 last:border-r-0">
+                                  {d.gmfm}%
+                                </td>
+                              ))}
+                            </tr>
+                            <tr>
+                              <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">Nyeri Gerak (NRS)</td>
+                              {timelineData.map((d, i) => (
+                                <td key={i} className="px-4 py-2.5 text-center font-mono font-bold text-rose-600 border-r border-slate-100 last:border-r-0">
+                                  {d.pain} / 10
+                                </td>
+                              ))}
+                            </tr>
+                            <tr>
+                              <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">Spastisitas Ashworth</td>
+                              {timelineData.map((d, i) => (
+                                <td key={i} className="px-4 py-2.5 text-center font-mono text-slate-800 border-r border-slate-100 last:border-r-0">
+                                  {d.ashworth}
+                                </td>
+                              ))}
+                            </tr>
+                            <tr>
+                              <td className="px-4 py-2.5 font-bold text-slate-700 bg-slate-50 border-r border-slate-100">Catatan Terapis</td>
+                              {timelineData.map((d, i) => (
+                                <td key={i} className="px-4 py-2.5 text-slate-600 italic text-[11px] border-r border-slate-100 last:border-r-0">
+                                  {d.notes || '-'}
+                                </td>
+                              ))}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-10 text-center space-y-3">
+                    <TrendingUp size={32} className="mx-auto text-slate-300" />
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Belum Ada Sesi Evaluasi</h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Pasien ini belum memiliki catatan evaluasi terapi berkala. Klik tombol di bawah untuk mencatat sesi evaluasi pertama ({nextSessionCode}).
+                      </p>
+                    </div>
+                    <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+                      <Plus size={14} /> Catat Evaluasi ({nextSessionCode})
+                    </Button>
                   </div>
-                </div>
+                )}
               </>
             ) : (
               <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
