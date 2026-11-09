@@ -10,20 +10,22 @@ return new class extends Migration
     {
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('no_rm')->unique()->nullable();
             $table->string('name');
-            $table->string('age');
+            $table->unsignedSmallInteger('age');
             $table->enum('gender', ['Laki-Laki', 'Perempuan'])->nullable();
             $table->string('religion')->nullable();
             $table->string('occupation')->nullable();
             $table->text('address')->nullable();
-            
+
             // Data Medis RS
             $table->string('medical_diagnosis')->nullable();
             $table->text('clinical_notes')->nullable(); // Rontgen, MRI, CT-Scan, dll
             $table->text('general_treatment')->nullable();
             $table->text('doctor_referral')->nullable();
-            
+            $table->string('clinical_attachment_path')->nullable();
+
             $table->timestamps();
         });
     }

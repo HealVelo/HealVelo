@@ -9,6 +9,7 @@ use App\Models\ProgressEvaluation;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreAssessmentRequest;
+use App\Http\Requests\StorePatientRequest;
 use App\Services\AiPhysioService;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\AuthController;
@@ -64,18 +65,36 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
     // ------------------------------------------
     // Generator Nomor Rekam Medis Otomatis
     Route::get('/api/patients/generate-rm', function () {
-        $lastPatient = Patient::whereNotNull('no_rm')
-            ->where('no_rm', '~', '^[0-9]+$')
-            ->orderByRaw('CAST(no_rm AS INTEGER) DESC')
-            ->first();
+        $maxRm = Patient::whereNotNull('no_rm')
+            ->pluck('no_rm')
+            ->filter(fn ($rm) => ctype_digit((string) $rm))
+            ->map(fn ($rm) => (int) $rm)
+            ->max();
 
-        $nextNumber = $lastPatient ? ((int) $lastPatient->no_rm + 1) : 10001;
+        $nextNumber = $maxRm ? ($maxRm + 1) : 10001;
         return response()->json(['no_rm' => (string) $nextNumber]);
     })->name('patients.generate-rm');
 
     // Direktori Pasien Terdaftar
-    Route::get('/patients', function () {
-        $paginated = Patient::with('latestAssessment')->latest()->paginate(10);
+    Route::get('/patients', function (Request $request) {
+        $search = trim((string) $request->query('search', ''));
+
+        $paginated = Patient::accessibleBy($request->user())
+            ->with('latestAssessment')
+            ->when($search !== '', function ($query) use ($search) {
+                $like = '%' . strtolower($search) . '%';
+                $query->where(function ($q) use ($like) {
+                    $q->whereRaw('LOWER(name) LIKE ?', [$like])
+                      ->orWhereRaw("LOWER(COALESCE(no_rm, '')) LIKE ?", [$like])
+                      ->orWhereRaw("LOWER(COALESCE(medical_diagnosis, '')) LIKE ?", [$like])
+                      ->orWhereHas('latestAssessment', function ($aq) use ($like) {
+                          $aq->whereRaw("LOWER(COALESCE(keluhan_utama, '')) LIKE ?", [$like]);
+                      });
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         $patientsData = collect($paginated->items())->map(function ($p) {
             $words = explode(' ', trim($p->name));
@@ -100,42 +119,21 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
             'currentPage'   => $paginated->currentPage(),
             'totalPages'    => $paginated->lastPage(),
             'totalPatients' => $paginated->total(),
+            'search'        => $search,
         ]);
     })->name('patients');
 
     // Simpan Pendaftaran Pasien Baru
-    Route::post('/patients', function (Request $request) {
-        $validated = $request->validate([
-            'name'                => ['required', 'string', 'min:3', 'max:100', 'regex:/^[a-zA-Z\s.,\'-]+$/'],
-            'no_rm'               => 'nullable|string|max:50',
-            'age'                 => 'required|integer|min:0|max:120',
-            'gender'              => 'required|in:Laki-Laki,Perempuan',
-            'occupation'          => 'required|string|max:255',
-            'religion'            => 'nullable|string|max:100',
-            'address'             => 'nullable|string',
-            'medical_diagnosis'   => 'nullable|string|max:255',
-            'clinical_notes'      => 'nullable|string',
-            'general_treatment'   => 'nullable|string',
-            'doctor_referral'     => 'nullable|string',
-            'clinical_attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ], [
-            'name.regex' => 'Nama lengkap hanya boleh berisi huruf dan tanda baca nama.',
-            'name.min'   => 'Nama lengkap minimal harus 3 karakter.',
-            'age.min'    => 'Umur tidak boleh bernilai negatif.',
-            'age.max'    => 'Umur tidak boleh melebihi 120 tahun.',
-        ]);
+    Route::post('/patients', function (StorePatientRequest $request) {
+        $validated = $request->validated();
 
         if ($request->hasFile('clinical_attachment')) {
-            $path = $request->file('clinical_attachment')->store('clinical_attachments', 'public');
+            $path = $request->file('clinical_attachment')->store('clinical_attachments', 'local');
             $validated['clinical_attachment_path'] = $path;
         }
         unset($validated['clinical_attachment']);
 
-        foreach ($validated as $key => $value) {
-            if (is_string($value)) {
-                $validated[$key] = strip_tags(trim($value));
-            }
-        }
+        $validated['user_id'] = $request->user()?->id;
 
         Patient::create($validated);
 
@@ -143,7 +141,9 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
     })->name('patients.store');
 
     // Detail Profil & Riwayat Pasien
-    Route::get('/patients/{patient}', function (Patient $patient) {
+    Route::get('/patients/{patient}', function (Request $request, Patient $patient) {
+        abort_unless($patient->canBeAccessedBy($request->user()), 403, 'Anda tidak memiliki akses ke rekam medis pasien ini.');
+
         $patient->load([
             'assessments' => fn($q) => $q->latest(),
             'icfReports'  => fn($q) => $q->latest(),
@@ -152,13 +152,23 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
         return Inertia::render('Patients/Show', ['patient' => $patient]);
     })->name('patients.show');
 
-    // Streaming Berkas Penunjang Radiologi (Bebas 403 Forbidden)
-    Route::get('/patients/{patient}/attachment', function (Patient $patient) {
-        if (!$patient->clinical_attachment_path || !Storage::disk('public')->exists($patient->clinical_attachment_path)) {
+    // Streaming Berkas Penunjang Radiologi (Bebas 403 Forbidden bagi pemilik/pembimbing)
+    Route::get('/patients/{patient}/attachment', function (Request $request, Patient $patient) {
+        abort_unless($patient->canBeAccessedBy($request->user()), 403, 'Anda tidak memiliki akses ke berkas lampiran pasien ini.');
+
+        if (!$patient->clinical_attachment_path) {
             abort(404, 'Berkas lampiran klinis tidak ditemukan di penyimpanan server.');
         }
 
-        return Storage::disk('public')->response($patient->clinical_attachment_path);
+        if (Storage::disk('local')->exists($patient->clinical_attachment_path)) {
+            return Storage::disk('local')->response($patient->clinical_attachment_path);
+        }
+
+        if (Storage::disk('public')->exists($patient->clinical_attachment_path)) {
+            return Storage::disk('public')->response($patient->clinical_attachment_path);
+        }
+
+        abort(404, 'Berkas lampiran klinis tidak ditemukan di penyimpanan server.');
     })->name('patients.attachment');
 
     // ------------------------------------------
@@ -168,7 +178,12 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
 
     // Form Pemeriksaan Fisik Terstandar (Menyertakan atribut age untuk deteksi cerdas)
     Route::get('/physio-kit/assessment', function (Request $request) {
-        $patients = Patient::select('id', 'name', 'no_rm', 'age')->get();
+        $patients = Patient::accessibleBy($request->user())
+            ->select('id', 'name', 'no_rm', 'age')
+            ->latest()
+            ->limit(100)
+            ->get();
+
         return Inertia::render('PhysioKit/Assessment', [
             'area'       => $request->query('area', 'pediatric_full_body'),
             'patient_id' => $request->query('patient_id', ''),
@@ -208,10 +223,14 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
     // Lembar Cetak & Pratinjau Laporan ICF Dinamis
     Route::get('/physio-kit/treatment-plan', function (Request $request) {
         $report = IcfReport::with(['patient.evaluations', 'assessment'])->findOrFail($request->query('report'));
+        abort_unless($report->patient && $report->patient->canBeAccessedBy($request->user()), 403, 'Anda tidak memiliki akses ke laporan klinik ini.');
 
         $user = auth()->user() ? auth()->user()->load('supervisor') : null;
 
-        $practitioners = User::select('id', 'name', 'identifier_number', 'role')->get();
+        $practitioners = User::select('id', 'name', 'identifier_number', 'role')
+            ->orderBy('name')
+            ->limit(100)
+            ->get();
         $supervisorsList = $practitioners->where('role', 'supervisor')->values();
         $studentsList = $practitioners->where('role', 'mahasiswa')->values();
 
@@ -239,16 +258,20 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
     // ------------------------------------------
     Route::get('/progress-tracking', function (Request $request) {
         $patientId = $request->query('patient_id');
-        $patients = Patient::select('id', 'name', 'no_rm')->get();
+        $patients = Patient::accessibleBy($request->user())
+            ->select('id', 'name', 'no_rm')
+            ->latest()
+            ->limit(100)
+            ->get();
 
         $selectedPatient = null;
         $evaluations = [];
 
         if ($patientId) {
-            $selectedPatient = Patient::with('evaluations')->find($patientId);
-            $evaluations = $selectedPatient ? $selectedPatient->evaluations : [];
+            $selectedPatient = Patient::accessibleBy($request->user())->with('evaluations')->findOrFail($patientId);
+            $evaluations = $selectedPatient->evaluations;
         } elseif ($patients->isNotEmpty()) {
-            $selectedPatient = Patient::with('evaluations')->first();
+            $selectedPatient = Patient::accessibleBy($request->user())->with('evaluations')->find($patients->first()->id);
             $evaluations = $selectedPatient ? $selectedPatient->evaluations : [];
         }
 
@@ -261,17 +284,20 @@ Route::middleware(['auth', 'throttle:60,1'])->group(function () {
 
     Route::post('/progress-tracking', function (Request $request) {
         $validated = $request->validate([
-            'patient_id'      => 'required|exists:patients,id',
-            'session_code'    => 'nullable|string|max:20',
-            'session_name'    => 'nullable|string|max:20',
-            'evaluation_date' => 'nullable',
-            'pain_nrs'        => 'required|array',
-            'mmt_records'     => 'nullable|array',
-            'lgs_records'     => 'nullable|array',
-            'gmfm_score'      => 'nullable|numeric|min:0|max:100',
-            'ashworth_score'  => 'nullable|string|max:50',
-            'clinical_notes'  => 'nullable|string',
+            'patient_id'      => ['required', 'exists:patients,id'],
+            'session_code'    => ['nullable', 'string', 'max:20'],
+            'session_name'    => ['nullable', 'string', 'max:20'],
+            'evaluation_date' => ['nullable', 'date', 'max:50'],
+            'pain_nrs'        => ['required', 'array', 'max:20'],
+            'mmt_records'     => ['nullable', 'array', 'max:100'],
+            'lgs_records'     => ['nullable', 'array', 'max:100'],
+            'gmfm_score'      => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'ashworth_score'  => ['nullable', 'string', 'max:50'],
+            'clinical_notes'  => ['nullable', 'string', 'max:2000'],
         ]);
+
+        $patient = Patient::findOrFail($validated['patient_id']);
+        abort_unless($patient->canBeAccessedBy($request->user()), 403, 'Anda tidak memiliki akses untuk mengevaluasi pasien ini.');
 
         $sessionVal = $validated['session_name'] ?? $validated['session_code'] ?? 'T1';
         $validated['session_name'] = $sessionVal;

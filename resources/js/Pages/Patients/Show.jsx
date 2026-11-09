@@ -92,7 +92,7 @@ export default function PatientShow({ patient }) {
             <a href={`/progress-tracking?patient_id=${patient.id}`}>
               <Button variant="outline" className="text-xs">
                 <TrendingUp size={14} className="text-blue-600" />
-                Progress Tracking (Evaluation)[cite: 2]
+                Progress Tracking (Evaluation)
               </Button>
             </a>
             <Button 

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -25,7 +26,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => ['required', 'string', 'email:rfc,dns'],
+            'email'    => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ], [
             'email.required'    => 'Email wajib diisi.',
@@ -85,10 +86,13 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name'              => ['required', 'string', 'min:3', 'max:100', 'regex:/^[a-zA-Z\s.,\'-]+$/'],
-            'email'             => ['required', 'string', 'email:rfc,dns', 'max:255', 'unique:users,email'],
+            'email'             => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role'              => ['required', 'in:mahasiswa,supervisor'],
             'identifier_number' => ['required', 'string', 'max:30', 'regex:/^[0-9a-zA-Z\/-]+$/'],
-            'supervisor_id'     => ['nullable', 'exists:users,id'],
+            'supervisor_id'     => [
+                'nullable',
+                Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'supervisor')),
+            ],
             'password'          => [
                 'required',
                 'confirmed',
@@ -102,6 +106,7 @@ class AuthController extends Controller
             'email.unique'               => 'Alamat email ini sudah terdaftar di sistem.',
             'identifier_number.required' => 'Nomor induk (NIM/NIK) wajib diisi.',
             'identifier_number.regex'    => 'Format nomor induk hanya boleh berupa angka dan huruf.',
+            'supervisor_id.exists'       => 'Dosen pembimbing klinis yang dipilih tidak valid.',
             'password.min'               => 'Kata sandi minimal 8 karakter dengan kombinasi huruf besar, huruf kecil, dan angka.',
             'password.confirmed'         => 'Konfirmasi kata sandi tidak sesuai.',
         ]);

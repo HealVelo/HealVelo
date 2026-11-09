@@ -84,7 +84,16 @@ export default function Navbar() {
         {/* Tombol Logout */}
         <button
           type="button"
-          onClick={() => router.post('/logout')}
+          onClick={() => {
+            try {
+              Object.keys(localStorage)
+                .filter((key) => key.startsWith('healvelo_assessment_draft_'))
+                .forEach((key) => localStorage.removeItem(key));
+            } catch (e) {
+              // Abaikan jika akses storage dibatasi browser
+            }
+            router.post('/logout');
+          }}
           className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-rose-500 hover:bg-rose-50/80 transition-colors"
         >
           <LogOut size={17} strokeWidth={2} />
